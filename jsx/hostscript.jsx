@@ -1,7 +1,4 @@
-/*
-var array = ["/Users/ink_004/Desktop/0816/633937_パールマネキン_コロンビア_ヒマラヤちはら台エンド什器_マグネットシート_INK/出力/oki_1220_050_マグネットシート_902x199.pdf"];
-addLabel(array);
-*/
+
 function addLabel(obj){
     var prefs = app.preferences;
     //synchronousMode = true

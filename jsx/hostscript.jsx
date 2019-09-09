@@ -1,7 +1,3 @@
-/*
-var array = ["/Users/ink_004/Desktop/0816/633937_パールマネキン_コロンビア_ヒマラヤちはら台エンド什器_マグネットシート_INK/出力/oki_1220_050_マグネットシート_902x199.pdf"];
-addLabel(array);
-*/
 function addLabel(obj){
     var prefs = app.preferences;
     //synchronousMode = true
@@ -41,4 +37,39 @@ function addLabel(obj){
         return yourLabels;
     }
     return true;
+}
+
+function selectFiles(num){
+    var doc = app.document;
+    var fileList = doc.thumbnail.children;
+    for(var i=0;i<fileList.length;i++){
+
+        if((i % 2) != 0 && num.type === "odd"){
+            doc.select(fileList[i]);
+        }
+        
+        if((i % 2) == 0 && num.type === "even"){
+            doc.select(fileList[i]);
+        }
+    }
+
+    
+    /*隠しファイル削除関数
+    function removeHideFile(array){
+        for(var n=0;n<array.length;n++){
+            if(ishidingFile(array[n].name)){
+                array.splice(n,1);
+            }
+        }
+        return array;
+    }
+ 
+    function ishidingFile(name){
+        $.writeln(name);
+        if(name[0] == "."){
+            return true;
+        }
+        return false;
+    }
+    */
 }

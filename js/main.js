@@ -7,33 +7,154 @@ window.onload = () =>{
     const fileList = document.getElementById("fileList");
     const redLabel = document.getElementById("redLabel");
     const reset = document.getElementById("reset");
+    const evenBtn = document.getElementById("evenBtn");
+    const oddBtn = document.getElementById("oddBtn");
+    const makeFolder = document.getElementById("makeFolder");
+    const someName = document.getElementById("someName");
+    const putIn = document.getElementById("putIn");
     const path = require("path");
+    const fs = require("fs");
     const filePath = csInterface.getSystemPath(SystemPath.EXTENSION) +`/js/`;
     const extensionRoot = csInterface.getSystemPath(SystemPath.EXTENSION) +`/jsx/`;
     csInterface.evalScript(`$.evalFile("${extensionRoot}json2.js")`);//json2読み込み
     
-    console.log(__dirname);
+    const getCurrentPathJsx = "getOpenedPath.jsx";
+    const getSelectionJsx = "getSelect.jsx";
     
-    reset.addEventListener("click",resetDrop);
+    const dir_home = process.env[process.platform == `win32` ? `USERPROFILE` : `HOME`];
+    const dir_desktop = require(`path`).join(dir_home, `Desktop`);//デスクトップパス
     
-    redLabel.addEventListener("click",()=>{
-        const labelNumber = Array.from(document.getElementsByClassName("labelColor")).findIndex(v => v.checked);
-        console.log(labelNumber);
-        const liList = Array.from(dropArea.getElementsByTagName("li"));
-        const pathList = liList.map(v =>  v.dataset.path);
-        const obj = {
-            pathList:pathList,
-            number:labelNumber
+    class ButtonEvent{
+        constructor(btn){
+            this.btn = btn;
+            this.btn.addEventListener("click",this);
         }
-        csInterface.evalScript(`addLabel(${JSON.stringify(obj)})`,result=>{
-            console.log(result);
-            if(result){
-                resetDrop();
-            }
-        });
-    });
+        
+        handleEvent(){}
+    }
     
-    prevent_drag_event();
+    class SelectFiles extends ButtonEvent{
+        constructor(btn,num){
+            super(btn);
+            this.num = {type:num};
+        }
+        
+        handleEvent(){
+            csInterface.evalScript(`selectFiles(${JSON.stringify(this.num)})`);
+        }
+    }
+    
+    const even = new SelectFiles(evenBtn,"even");
+    const odd = new SelectFiles(oddBtn,"odd");
+    
+    class ResetDrop extends ButtonEvent{
+        constructor(btn){
+            super(btn);
+        }
+        
+        handleEvent(){
+            while(dropArea.firstChild){
+                dropArea.removeChild(dropArea.firstChild);
+            }
+        }
+    }
+    const resetDrop = new ResetDrop(reset);
+    
+    class AddLabels extends ButtonEvent{
+        constructor(btn){
+            super(btn);
+        }
+        
+        handleEvent(){
+            const labelNumber = Array.from(document.getElementsByClassName("labelColor")).findIndex(v => v.checked);
+            console.log(labelNumber);
+            const liList = Array.from(dropArea.getElementsByTagName("li"));
+            const pathList = liList.map(v =>  v.dataset.path);
+            const obj = {
+                pathList:pathList,
+                number:labelNumber
+            }
+            csInterface.evalScript(`addLabel(${JSON.stringify(obj)})`,result=>{
+                if(result){
+                    resetDrop.handleEvent();
+                }
+            });
+        }
+    }
+    
+    const labels = new AddLabels(redLabel);
+    
+    
+    class MakeFolder extends ButtonEvent{
+        constructor(btn,jsx){
+            super(btn);
+            this.jsx = jsx;
+        }
+        
+        async handleEvent(){
+            if(this.isTextValue(someName.value)){ 
+                alert("the value is invalid");    
+                return false;
+            }
+            const textValue = someName.value;
+            const currentPath = await this.getJsxData();
+            console.log(currentPath);
+            const res = this.createFolder(`${currentPath}/${textValue}`);
+            console.log(res);
+        }
+        
+        isTextValue(value){
+            if(value === undefined || value === null || value === ""){
+                return true;
+            }
+            return false;
+        }
+        
+        getJsxData(){
+            return new Promise(resolve=>{
+                csInterface.evalScript(`$.evalFile("${extensionRoot}${this.jsx}")`,(o)=>{
+                    console.log(o);
+                    resolve(o);
+                });
+            });
+        }
+        
+        createFolder(fPath){
+            try{
+                fs.statSync(fPath);
+            }catch(e){
+                fs.mkdirSync(fPath);
+            }
+        }
+    }
+    
+    class MoveNewFolder extends MakeFolder{
+        constructor(btn,jsx){
+            super(btn,jsx);
+            
+        }
+        
+        async handleEvent(){
+            if(this.isTextValue(someName.value)){ 
+                alert("the value is invalid");    
+                return false;
+            }
+            const textValue = someName.value;
+            const selected = JSON.parse(await this.getJsxData());
+            console.log(selected);
+            selected.forEach(f=>{
+                f.path = path.dirname(f.fullPath);
+                const folderPath = `${f.path}/${textValue}`;
+                console.log(f.path);
+                this.createFolder(folderPath);
+                fs.renameSync(`${f.path}/${f.name}`,`${folderPath}/${f.name}`);
+            });
+        }
+    }
+    
+    const mkdir = new MakeFolder(makeFolder,getCurrentPathJsx);
+    const sortFiles = new MoveNewFolder(putIn,getSelectionJsx);
+    
     class Drag{
         constructor(area,list){
             this.area = area;
@@ -53,7 +174,6 @@ window.onload = () =>{
             e.stopPropagation();
             e.preventDefault();
             const files = Array.from(e.dataTransfer.files);
-            console.log(files);
             /*
             while(this.area.firstChild){
                 this.area.removeChild(this.area.firstChild);
@@ -70,19 +190,16 @@ window.onload = () =>{
     const drag = new Drag(dropArea,fileList);
     
     
-    function prevent_drag_event(){
+    
+    
+    prevent_drag_event();
+    function prevent_drag_event (){
         window.addEventListener(`drop`,prevent_dragnaddrop,false);
         window.addEventListener(`dragover`,prevent_dragnaddrop,false);
     
         function prevent_dragnaddrop(e){
             e.stopPropagation();
             e.preventDefault();
-        }
-    }
-    
-    function resetDrop(){
-        while(dropArea.firstChild){
-            dropArea.removeChild(dropArea.firstChild);
         }
     }
     

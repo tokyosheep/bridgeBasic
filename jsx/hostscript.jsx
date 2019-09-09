@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master
 function addLabel(obj){
     var prefs = app.preferences;
     //synchronousMode = true
